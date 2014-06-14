@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Instant Epiphany - steamdlfilter - a steamlimiter clone for linux</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+    </head>
+    <body>
+       <div class="header">
+<!--<div class=inner>-->
+	<div class="name">
+		<div class="first">
+			<p>Jordan Cran</p>
+</div>
+<p>Instant Epiphany</p>
+	</div>
+
+<nav>
+  <ul>  
+    <li><a class="firstnav" href="index.html">blog</a>  
+    <li><a href="#">portfolio</a>  
+    <li><a href="#">contact</a>  
+  </ul>
+</nav>
+<!--</div>-->
+</div>
+
+
+        <div id="content">
+            <h1>steamdlfilter - a steamlimiter clone for linux</h1>
+
+            <div class="info">
+    Posted on June 15, 2014
+    
+</div>
+
+<p>About 1 year ago (before I got into software development), I started using steam natively on linux. I got pretty good performance with the proprietary AMD drivers, but I had a problem. I had 15GB of download/upload a month, capped to 56kB/s down and up once that was exceeded. The only thing that made it <em>just</em> tolerable, was that any downloads from the handy aarnet mirror, and specifically telstra/bigponds steam game content servers, were counted as “unmetered” data.</p>
+<p>On windows, I had been using a brilliant little app by Nigel Bree called <a href="https://code.google.com/p/steam-limiter/">steam-limiter</a>. For those that haven’t used steam-limiter before, it monitors steam game downloads, and only allows downloads from servers matching a rulset that you specify (or use the included auto-detection). Unfortunately, steam-limiter is windows only. I searched on and off for about 6 months, starting about 7 months ago. In that time, I also started learning my first programming language, haskell.</p>
+<p>I was happily surprised (I didn’t expect programming to be as enjoyable as I found it), I enjoyed haskell, while it took me a month or 2 to wrap my head around the basics (whether this is because I am a little dense, or possibly haskell wasn’t a great first choice as it is not as popular as the more common imperitave languages like C/++, Java, and therefore doesn’t have as many books/tutorials I don’t know.), I was happily coding my own programs to solve a variety of needs I had (see <a href="https://github.com/instantepiphany/qsrun">qsrun</a>, <a href="https://github.com/instantepiphany/hwrite">hWrite</a>). I wanted to code steamdlfilter in haskell, but doing it through the FFI would be finnicky at best, and as Nigel Bree suggested when I asked for some pointers, I tried to implement it using Cython. This didn’t work. Not due to cython, but to my general lack of knowledge of differing architectures (the steam client is 32-bit, I was getting errors when trying to compile my cython code into 32-bit C libraries on a 64-bit machine). I decided to remove the “inbetween” step of cython, bite the bullet and just learn C (or at least enough to write the library).</p>
+<p>While I have written the library, and it “works”, I don’t know yet whether I have used horrible practices/techniques yet, or whether there are things that could be done a lot better. It is ~100 lines, so surely it is too small to stuff up too badly. Surely.</p>
+<p>Anyway, while it doesn’t have a nice fancy installer, (though that is on the to-do list) you can check it out on [github], or just nab the clone url: <code>https://github.com/instantepiphany/steamdlfilter</code></p>
+<p>Considering it isn’t that large, here is the current version:</p>
+<pre class="sourceCode C"><code class="sourceCode c"><span class="ot">#include &lt;sys/socket.h&gt;</span>
+<span class="ot">#include &lt;sys/types.h&gt;</span>
+<span class="ot">#include &lt;libconfig.h&gt;</span>
+<span class="ot">#include &lt;string.h&gt;</span>
+<span class="ot">#include &lt;stdlib.h&gt;</span>
+<span class="ot">#include &lt;dlfcn.h&gt;</span>
+<span class="ot">#include &lt;stdio.h&gt;</span>
+
+ssize_t send(<span class="dt">int</span> sockfd, <span class="dt">const</span> <span class="dt">void</span> *buf, size_t len, <span class="dt">int</span> flags) {
+
+  <span class="dt">const</span> <span class="dt">char</span> * cbuf = (<span class="dt">const</span> <span class="dt">char</span> *) buf; 
+
+  ssize_t (*original_send) (<span class="dt">int</span>, <span class="dt">const</span> <span class="dt">void</span>*, size_t, <span class="dt">int</span>) = dlsym(RTLD_NEXT, <span class="st">&quot;send&quot;</span>);
+
+  config_t config;
+  config_init(&amp;config);
+  <span class="dt">const</span> <span class="dt">char</span> * chome = getenv(<span class="st">&quot;HOME&quot;</span>);
+  <span class="dt">char</span> prelog[<span class="dv">100</span>];
+  <span class="dt">char</span> precfg[<span class="dv">100</span>];
+  <span class="dt">char</span> * log = strcpy(prelog, chome);
+  <span class="dt">char</span> * cfg = strcpy(precfg, chome);
+  <span class="dt">const</span> <span class="dt">char</span> * configpath = strcat(cfg,<span class="st">&quot;/.config/steamdlfilter/config&quot;</span>);
+  <span class="dt">const</span> <span class="dt">char</span> * logpath = strcat(log, <span class="st">&quot;/.steamdlfilter.log&quot;</span>);
+
+
+  config_read_file(&amp;config, configpath);
+
+  <span class="dt">int</span> filterenabled;
+  <span class="dt">const</span> <span class="dt">char</span> * enablepath = <span class="st">&quot;filterenabled&quot;</span>;
+
+  config_lookup_bool(&amp;config, enablepath, &amp;filterenabled);
+
+
+  <span class="kw">if</span> (strstr(cbuf, <span class="st">&quot;/depot/&quot;</span>) &amp;&amp; filterenabled == <span class="dv">1</span>) {
+
+	  FILE *logfp;
+	  <span class="dt">char</span> *logmode = <span class="st">&quot;a+&quot;</span>;
+
+	  <span class="dt">const</span> <span class="dt">char</span> * unmeteredserver;
+	  <span class="dt">const</span> <span class="dt">char</span> * serverpath = <span class="st">&quot;unmeteredserver&quot;</span>;
+
+	  config_lookup_string(&amp;config, serverpath, &amp;unmeteredserver);
+
+	  <span class="dt">int</span> logging;
+	  <span class="dt">const</span> <span class="dt">char</span> * logconfigpath = <span class="st">&quot;logging&quot;</span>;
+
+	  config_lookup_bool(&amp;config, logconfigpath, &amp;logging);
+
+
+	  <span class="kw">if</span> (strstr(cbuf, unmeteredserver)) {	  
+		  <span class="kw">if</span> (logging == <span class="dv">1</span>) {
+		  	logfp = fopen(logpath, logmode);
+                  	fprintf(logfp, <span class="st">&quot;=======ALLOWED=======</span><span class="ch">\n</span><span class="st">%s</span><span class="ch">\n</span><span class="st">&quot;</span>, cbuf);
+                  	fclose(logfp);
+		  }
+                  <span class="kw">return</span> original_send(sockfd, buf, len, flags);
+    }
+	  <span class="kw">else</span> {
+                  <span class="kw">if</span> (logging == <span class="dv">1</span>) {
+			logfp = fopen(logpath, logmode);
+			fprintf(logfp, <span class="st">&quot;=======BLOCKED=======</span><span class="ch">\n</span><span class="st">%s</span><span class="ch">\n</span><span class="st">&quot;</span>, cbuf);
+			fclose(logfp);
+		  }
+                  <span class="kw">return</span> -<span class="dv">1</span>;
+    }
+	  
+
+  }
+  <span class="kw">else</span> 
+      <span class="kw">return</span> original_send(sockfd, buf, len, flags);
+  config_destroy(&amp;config);
+
+}</code></pre>
+
+        </div>
+        <div id="footer">
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+    </body>
+</html>
