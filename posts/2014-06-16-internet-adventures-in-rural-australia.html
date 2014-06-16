@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Instant Epiphany - Internet adventures in rural Australia</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+    </head>
+    <body>
+       <div class="header">
+<!--<div class=inner>-->
+	<div class="name">
+		<div class="first">
+			<p>Jordan Cran</p>
+</div>
+<p>Instant Epiphany</p>
+	</div>
+
+<nav>
+  <ul>  
+    <li><a class="firstnav" href="../index.html">blog</a>  
+    <li><a href="#">portfolio</a>  
+    <li><a href="#">contact</a>  
+  </ul>
+</nav>
+<!--</div>-->
+</div>
+
+
+        <div id="content">
+            <h1>Internet adventures in rural Australia</h1>
+
+            <div class="info">
+    Posted on June 16, 2014
+    
+</div>
+
+<p>Many people take a reliable, cheap internet connection for granted. Even in Australia, while internet is more expensive than comparible connections in the US (let alone the EU), the majority of people have access to at least adsl2+, and often at competitive prices. For example, I regularly see an advertisement for TPG unlimited Adsl2+ bundled with home phone, $79 a month, unlimited data.</p>
+<p>Meanwhile, as my area is on a RIM pair gain system, and therefore unable to access wired internet, we have to use wireless. Only Telstra gets any kind of signal (and it is actually a strong signal most of the time), and telstras wireless plans are expensive. Sure, it <em>does</em> cost more for them to supply internet via phone networks instead of cables in the ground, that knowledge doesn’t make the cost any easier for the customers to swallow.</p>
+<p>While my connection does actually have more than adequate bandwidth, (it often approaches the 20mbit max downstream it is advertised for), and latency is comparable to my previous adsl1 connection (~50ms to most sydney servers), that lovely bandwidth is hampered by the fact that at 20mbits(or 2.5mB/s), you can download 15GB, the entire monthly data allowance, 1 hour and 40 minutes. Once you expend your data on a telstra (bigpond) wireless broadband plan, you are capped at a measly 56kb/s, or ~8kB/s.</p>
+<p>My families internet connection needs to be accessible by 9 people, and the supplied router is software limited to 10 concurrent users accessing it. This would be fine, if each person had one device. But I have 3 that I regularly access the web through, and we have a total of about 15 <em>devices</em> that need to access the internet at any given time. The router doesn’t care that only 9 <em>people</em> are using it, just that 15 <em>devices</em> want to, and that isn’t ok.</p>
+<p>We needed a solution that would allow anyone to access the internet on the device of their choice. Also a concern, between 9 people, many of which need to use the internet quite frequently, 15GB a month isn’t much. As a household, we have 500MB a day of data we can use, if we want it to last until the end of the month. To make maths easy, divide that between 10 people, and we have 50MB per person, per day. If you have software that needs an update that is greater than 50MB, and doesn’t handle pausing/resuming the download, then you are screwed. No updates for you. To manage bandwidth distribution, I knew that I needed to use QOS (quality of service), which the provided modem does not have. So, to solve both the connected device restriction, and the QOS need, I turned to gargoyle. Gargoyle is a open-wrt based custom firmware for routers, which adds plenty of features often only found on business/enterprise grade routers. One of those features, is turning the router into a wireless client. This was exactly what we needed, but hardware became an issue. Because we had and have ~9 people accessing the internet at different times, often sending files through to each other locally, the first 4 or 5 routers burned out within days or months. Eventually we spent a little more to get a router that would last us longer, and it has been going strong since we bought it, 6 months ago or so.</p>
+<p>It isn’t without its faults though.</p>
+<p>It really only has one, but it is an annoying one. Unfortunately, it is related to QOS. I spent hours finding an optimal combination of rules and classes, which also used daily quotas, but this was not stable. Even though checking the stats showed that less than 10% of cpu, ram and total connections were being used, the router would consistently (about once every 2 days) decide to wipe all of the qos and quota settings. For some reason, it <strong>only</strong> wiped QOS and quotas, nothing else. So it silently removed all restrictions on each persons bandwidth, and I was none the wiser unless I checked. I did check often, but often not in time to catch it. Some does we used gigabytes of data before I noticed (as isp-based data monitoring is delayed by at least 12 hours often). I ended up simplifying the QOS classes/rules and removing quota based controls, and now it <em>only</em> wipes itself once a month or so. So now I get to spend 10 minutes every hour checking through all of the graphs and logs, and making sure no one is using too much data, that all the rules are in place and working, and that everything is ok.</p>
+
+        </div>
+	<div id="sidebar">
+	</div>
+        <div id="footer">
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+    </body>
+</html>
